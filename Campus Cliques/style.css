@@ -301,3 +301,14 @@ button.loading .btn-spinner { display: inline-block !important; }
   .hc2-front .hn { font-size: 44px; }
   .hc2-front .htit { font-size: 13px; }
 }
+
+/* ── Nav responsive — prevent wrapping ── */
+@media (max-width: 720px) {
+  /* Hide How It Works / Ambassadors / For Brands, keep Sign In + Join Now */
+  .nr > a:nth-child(-n+3) { display: none; }
+}
+
+@media (max-width: 420px) {
+  /* Hide logo text on very small screens, keep logo image */
+  .nlt { display: none; }
+}
