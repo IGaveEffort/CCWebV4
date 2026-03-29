@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://eemsfapreydhdhogfocg.supabase.co; connect-src 'self' https://eemsfapreydhdhogfocg.supabase.co wss://realtime.supabase.co wss://eemsfapreydhdhogfocg.supabase.co; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <title>Tasks | Campus Cliques</title>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="images/favicon.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="platform.css">
+  <style>
+    .task-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(123,104,238,0.15);
+      border-radius: 18px; padding: 28px; margin-bottom: 16px; transition: border-color 0.2s;
+    }
+    .task-card.completed-task { border-color: rgba(34,197,94,0.25);  background: rgba(34,197,94,0.03); }
+    .task-card.revision-task  { border-color: rgba(249,115,22,0.25); background: rgba(249,115,22,0.03); }
+
+    .task-card-head {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 12px; margin-bottom: 6px;
+    }
+    .task-card-num {
+      background: linear-gradient(135deg, rgba(123,104,238,0.25), rgba(192,38,211,0.25));
+      color: #b8b0ff; font-family: Anton, sans-serif; font-size: 13px;
+      min-width: 28px; height: 28px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .task-card-title { font-size: 16px; font-weight: 600; flex: 1; }
+    .task-card-desc  { color: rgba(255,255,255,0.52); font-size: 13px; line-height: 1.6; margin: 10px 0 20px; }
+
+    .submission-area {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(123,104,238,0.15);
+      border-radius: 12px; padding: 20px;
+    }
+    .submission-label {
+      color: rgba(255,255,255,0.38); font-size: 10px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;
+    }
+    .submission-row { display: flex; gap: 10px; align-items: flex-end; }
+    .submission-row .fi  { flex: 1; }
+    .submission-row .fta { flex: 1; min-height: 80px; margin-bottom: 0; }
+
+    .file-pick-area {
+      border: 2px dashed rgba(123,104,238,0.25); border-radius: 10px;
+      padding: 24px; text-align: center; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s; margin-bottom: 10px;
+    }
+    .file-pick-area:hover { border-color: rgba(123,104,238,0.5); background: rgba(123,104,238,0.04); }
+    .file-pick-area input[type="file"] { display: none; }
+    .file-pick-icon { font-size: 28px; margin-bottom: 8px; }
+    .file-pick-text { color: rgba(255,255,255,0.45); font-size: 13px; }
+    .file-pick-text span { color: #b8b0ff; }
+    .file-name-display { color: #b8b0ff; font-size: 13px; margin-top: 8px; font-weight: 500; }
+
+    .existing-submission {
+      margin-top: 16px; padding: 14px 18px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(123,104,238,0.15); border-radius: 10px;
+    }
+    .existing-sub-label { font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 6px; }
+    .existing-sub-content { font-size: 13px; color: rgba(255,255,255,0.7); word-break: break-all; }
+    .existing-sub-content a { color: #b8b0ff; text-decoration: underline; }
+
+    .revision-note { background: rgba(249,115,22,0.08); border: 1px solid rgba(249,115,22,0.2); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #fb923c; margin-bottom: 12px; }
+
+    .locked-state { text-align: center; padding: 80px 24px; }
+    .locked-icon  { font-size: 56px; margin-bottom: 20px; }
+    .locked-title { font-family: Anton, sans-serif; font-size: 28px; margin-bottom: 10px; }
+    .locked-desc  { color: rgba(255,255,255,0.5); font-size: 15px; line-height: 1.6; max-width: 400px; margin: 0 auto 28px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nl">
+    <img src="images/logo-dark.png" alt="Campus Cliques Logo" style="width:44px;height:44px;object-fit:contain;border-radius:8px">
+    <span class="nlt">CAMPUS CLIQUES</span>
+  </div>
+  <div class="nr">
+    <a href="dashboard.html">Dashboard</a>
+    <button class="nc" id="signOutBtn" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12)">Sign Out</button>
+  </div>
+</nav>
+
+<div class="page-wrap" style="max-width:820px">
+
+  <button class="back-link" onclick="window.location.href='dashboard.html'">← Back to Dashboard</button>
+
+  <div id="loadingState" class="loading-state"><div class="spinner"></div><p>Loading tasks…</p></div>
+
+  <div id="lockedState" style="display:none" class="locked-state">
+    <div class="locked-icon">🔒</div>
+    <div class="locked-title">Tasks Locked</div>
+    <div class="locked-desc">Your application is still under review. Tasks unlock once you're accepted to this gig.</div>
+    <a href="dashboard.html" class="btn-outline">Back to Dashboard</a>
+  </div>
+
+  <div id="mainContent" style="display:none">
+    <div class="page-header">
+      <div class="page-label">Tasks & Deliverables</div>
+      <h1 class="page-title" id="gigTitle"></h1>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:10px">
+        <span id="gigBrand" style="color:#b8b0ff;font-size:14px;font-weight:600"></span>
+        <span id="progressBadge" class="badge badge-accepted"></span>
+      </div>
+    </div>
+    <div id="tasksList"></div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+  let currentUser = null;
+  let gigId       = null;
+
+  sb.auth.getSession().then(async ({ data: { session } }) => {
+    if (!session) { window.location.href = 'auth.html'; return; }
+    if (session.user.email === ADMIN_EMAIL) { window.location.href = 'admin.html'; return; }
+    currentUser = session.user;
+
+    gigId = new URLSearchParams(window.location.search).get('gigId');
+    if (!gigId) { window.location.href = 'dashboard.html'; return; }
+
+    loadPage();
+  });
+
+  document.getElementById('signOutBtn').addEventListener('click', async () => {
+    await sb.auth.signOut(); window.location.href = 'auth.html';
+  });
+
+  async function loadPage() {
+    const [{ data: gig }, { data: apps }, { data: delivs }] = await Promise.all([
+      sb.from('gigs').select('*').eq('id', gigId).single(),
+      sb.from('applications').select('status').eq('gig_id', gigId).eq('user_id', currentUser.id).limit(1),
+      sb.from('deliverables').select('*').eq('gig_id', gigId).eq('user_id', currentUser.id)
+    ]);
+
+    document.getElementById('loadingState').style.display = 'none';
+
+    if (!apps || !apps.length || apps[0].status !== 'accepted') {
+      document.getElementById('lockedState').style.display = 'block'; return;
+    }
+    if (!gig) { document.getElementById('lockedState').style.display = 'block'; return; }
+
+    // Build deliverables map: task_id → deliverable
+    const delivMap = {};
+    (delivs || []).forEach(d => { delivMap[d.task_id] = d; });
+
+    document.getElementById('gigTitle').textContent = gig.title || '';
+    document.getElementById('gigBrand').textContent = gig.brand || '';
+
+    const tasks     = gig.tasks || [];
+    const submitted = Object.keys(delivMap).length;
+    document.getElementById('progressBadge').textContent = `${submitted} / ${tasks.length} Submitted`;
+
+    renderTasks(tasks, delivMap);
+    document.getElementById('mainContent').style.display = 'block';
+  }
+
+  function renderTasks(tasks, delivMap) {
+    const wrap = document.getElementById('tasksList');
+    if (!tasks.length) {
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>No tasks defined for this gig yet.</p></div>`;
+      return;
+    }
+
+    wrap.innerHTML = '';
+
+    tasks.forEach((task, i) => {
+      const deliv      = delivMap[task.id];
+      const status     = deliv?.status || null;
+      const isApproved = status === 'approved';
+      const isRevision = status === 'needs_revision';
+
+      const cardClass = isApproved ? 'task-card completed-task' : isRevision ? 'task-card revision-task' : 'task-card';
+      const card = document.createElement('div');
+      card.className = cardClass;
+      card.id = `task-card-${task.id}`;
+
+      const typeIcons  = { link: '🔗', file: '📎', text: '✏️' };
+      const typeLabels = { link: 'Link', file: 'File Upload', text: 'Text' };
+
+      let statusBadge = '';
+      if (isApproved)              statusBadge = `<span class="badge badge-approved">Approved ✓</span>`;
+      else if (isRevision)         statusBadge = `<span class="badge badge-revision">Needs Revision</span>`;
+      else if (status === 'submitted') statusBadge = `<span class="badge badge-submitted">Submitted</span>`;
+
+      card.innerHTML = `
+        <div class="task-card-head">
+          <div style="display:flex;align-items:flex-start;gap:12px;flex:1">
+            <div class="task-card-num">${i + 1}</div>
+            <div class="task-card-title">${esc(task.title)}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0" id="badges-${esc(task.id)}">
+            <span class="badge badge-${esc(task.type)}">${typeIcons[task.type] || ''} ${esc(typeLabels[task.type] || task.type)}</span>
+            ${statusBadge}
+          </div>
+        </div>
+        ${task.description ? `<div class="task-card-desc">${esc(task.description)}</div>` : ''}
+        <div class="submission-area">${buildSubmissionArea(task, deliv)}</div>`;
+
+      wrap.appendChild(card);
+
+      // Wire file picker
+      if (task.type === 'file') {
+        const pickArea  = card.querySelector(`#pick-${task.id}`);
+        const fileInput = card.querySelector(`#file-${task.id}`);
+        if (pickArea && fileInput) {
+          pickArea.addEventListener('click', () => fileInput.click());
+          fileInput.addEventListener('change', () => {
+            const display = card.querySelector(`#fname-${task.id}`);
+            if (display) display.textContent = fileInput.files[0]?.name ? `Selected: ${fileInput.files[0].name}` : '';
+          });
+        }
+      }
+    });
+  }
+
+  function buildSubmissionArea(task, deliv) {
+    const isApproved = deliv?.status === 'approved';
+    const isRevision = deliv?.status === 'needs_revision';
+
+    if (isApproved) {
+      return `
+        <div class="submission-label">Your Submission</div>
+        ${existingContentHtml(task, deliv)}
+        <div style="color:#4ade80;font-size:13px;font-weight:600;margin-top:10px">✓ Approved by admin</div>`;
+    }
+
+    let html = '';
+    if (deliv) {
+      html += isRevision ? `<div class="revision-note">⚠️ Admin requested a revision. Please resubmit below.</div>` : '';
+      html += `<div class="submission-label">Current Submission</div>${existingContentHtml(task, deliv)}<div class="divider" style="margin:16px 0"></div><div class="submission-label">Resubmit</div>`;
+    } else {
+      html += `<div class="submission-label">Submit Your Work</div>`;
+    }
+
+    html += inputAreaHtml(task);
+    html += `
+      <div style="margin-top:12px">
+        <button class="btn-primary" style="font-size:12px;padding:10px 22px;position:relative"
+          data-task-id="${esc(task.id)}" data-task-type="${esc(task.type)}" data-task-title="${esc(task.title)}"
+          onclick="submitTaskClick(this)">
+          <span class="btn-text">${deliv ? 'Resubmit' : 'Submit'}</span>
+          <span class="btn-spinner" style="display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></span>
+        </button>
+        <div id="sub-msg-${esc(task.id)}" style="display:none;margin-top:10px"></div>
+      </div>`;
+    return html;
+  }
+
+  function existingContentHtml(task, deliv) {
+    if (!deliv) return '';
+    if (task.type === 'file' && deliv.file_url) {
+      return `<div class="existing-submission"><div class="existing-sub-label">Uploaded File</div><div class="existing-sub-content"><a href="${safeUrl(deliv.file_url)}" target="_blank" rel="noopener noreferrer">${esc(deliv.file_name || 'View File')}</a></div></div>`;
+    }
+    return `<div class="existing-submission"><div class="existing-sub-label">Submitted</div><div class="existing-sub-content">${esc(deliv.content || '')}</div></div>`;
+  }
+
+  function inputAreaHtml(task) {
+    if (task.type === 'link') {
+      return `<div class="submission-row"><input class="fi" id="input-${task.id}" type="url" placeholder="https://tiktok.com/…"></div>`;
+    }
+    if (task.type === 'text') {
+      return `<div class="submission-row"><textarea class="fta" id="input-${task.id}" placeholder="Write your response here…" style="min-height:90px"></textarea></div>`;
+    }
+    if (task.type === 'file') {
+      return `
+        <div class="file-pick-area" id="pick-${task.id}">
+          <input type="file" id="file-${task.id}" accept="image/*,video/*,.pdf,.doc,.docx">
+          <div class="file-pick-icon">📎</div>
+          <div class="file-pick-text">Click to select a file<br><span>Images, videos, PDFs accepted</span></div>
+          <div class="file-name-display" id="fname-${task.id}"></div>
+        </div>`;
+    }
+    return '';
+  }
+
+  function submitTaskClick(btn) {
+    submitTask(btn.dataset.taskId, btn.dataset.taskType, btn.dataset.taskTitle, btn);
+  }
+
+  // Allowed MIME types for file uploads
+  const ALLOWED_MIME = new Set([
+    'image/jpeg','image/png','image/gif','image/webp','image/svg+xml',
+    'video/mp4','video/quicktime','video/webm','video/x-msvideo',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]);
+  const ALLOWED_EXT = /\.(jpe?g|png|gif|webp|svg|mp4|mov|webm|avi|pdf|doc|docx)$/i;
+
+  async function submitTask(taskId, type, taskTitle, btn) {
+    btn.disabled = true;
+    btn.querySelector('.btn-text').style.opacity    = '0';
+    btn.querySelector('.btn-spinner').style.display = 'block';
+
+    const msgEl = document.getElementById(`sub-msg-${taskId}`);
+    msgEl.style.display = 'none';
+
+    try {
+      let content = '', file_url = '', file_name = '';
+
+      if (type === 'link') {
+        content = document.getElementById(`input-${taskId}`)?.value?.trim() || '';
+        if (!content) throw new Error('Please enter a URL.');
+        if (!content.startsWith('http')) throw new Error('Please enter a valid URL starting with http.');
+      } else if (type === 'text') {
+        content = document.getElementById(`input-${taskId}`)?.value?.trim() || '';
+        if (!content) throw new Error('Please write your response.');
+      } else if (type === 'file') {
+        const fileInput = document.getElementById(`file-${taskId}`);
+        const file = fileInput?.files?.[0];
+        if (!file) throw new Error('Please select a file to upload.');
+        if (file.size > 50 * 1024 * 1024) throw new Error('File must be under 50MB.');
+        if (!ALLOWED_MIME.has(file.type) || !ALLOWED_EXT.test(file.name)) {
+          throw new Error('File type not allowed. Please upload an image, video, PDF, or Word document.');
+        }
+
+        const path = `${currentUser.id}/${gigId}/${taskId}/${Date.now()}-${file.name}`;
+        const { error: uploadError } = await sb.storage.from('deliverables').upload(path, file, { upsert: true });
+        if (uploadError) throw new Error('File upload failed. Please try again.');
+
+        const { data: urlData } = sb.storage.from('deliverables').getPublicUrl(path);
+        file_url  = urlData.publicUrl;
+        file_name = file.name;
+      }
+
+      // Upsert deliverable (update if exists, insert if not)
+      const { data: existing } = await sb.from('deliverables')
+        .select('id')
+        .eq('gig_id', gigId)
+        .eq('user_id', currentUser.id)
+        .eq('task_id', taskId)
+        .maybeSingle();
+
+      const payload = {
+        gig_id: gigId, user_id: currentUser.id,
+        user_email: currentUser.email,
+        task_id: taskId, task_title: taskTitle,
+        type, content, file_url, file_name,
+        status: 'submitted',
+        submitted_at: new Date().toISOString()
+      };
+
+      if (existing) {
+        await sb.from('deliverables').update(payload).eq('id', existing.id);
+      } else {
+        await sb.from('deliverables').insert(payload);
+      }
+
+      // Show success
+      const msgDiv = document.getElementById(`sub-msg-${taskId}`);
+      msgDiv.className   = 'alert alert-success';
+      msgDiv.textContent = '✓ Submitted successfully!';
+      msgDiv.style.display = 'block';
+
+      // Update badge
+      const badgesWrap = document.getElementById(`badges-${taskId}`);
+      if (badgesWrap) {
+        const old = badgesWrap.querySelector('.badge-submitted, .badge-revision');
+        if (old) old.remove();
+        const nb = document.createElement('span');
+        nb.className = 'badge badge-submitted';
+        nb.textContent = 'Submitted';
+        badgesWrap.appendChild(nb);
+      }
+
+    } catch (err) {
+      const msgDiv = document.getElementById(`sub-msg-${taskId}`);
+      msgDiv.className   = 'alert alert-error';
+      msgDiv.textContent = err.message || 'Submission failed. Please try again.';
+      msgDiv.style.display = 'block';
+    }
+
+    btn.disabled = false;
+    btn.querySelector('.btn-text').style.opacity    = '1';
+    btn.querySelector('.btn-spinner').style.display = 'none';
+  }
+</script>
+</body>
+</html>

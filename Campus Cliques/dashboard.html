@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://eemsfapreydhdhogfocg.supabase.co; connect-src 'self' https://eemsfapreydhdhogfocg.supabase.co wss://realtime.supabase.co wss://eemsfapreydhdhogfocg.supabase.co; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <title>Dashboard | Campus Cliques</title>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="images/favicon.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="platform.css">
+  <style>
+    .compensation-badge {
+      display: inline-block;
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.25);
+      color: #4ade80;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .applied-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.35);
+      padding: 10px 20px;
+      border-radius: 24px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      cursor: default;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nl">
+    <img src="images/logo-dark.png" alt="Campus Cliques Logo" style="width:44px;height:44px;object-fit:contain;border-radius:8px">
+    <span class="nlt">CAMPUS CLIQUES</span>
+  </div>
+  <div class="nr">
+    <a href="index.html">Home</a>
+    <a href="dashboard.html" style="color:#fff">Dashboard</a>
+    <button class="nc" id="signOutBtn" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12)">Sign Out</button>
+  </div>
+</nav>
+
+<div class="page-wrap">
+
+  <div class="page-header">
+    <div class="page-label">Student Portal</div>
+    <h1 class="page-title">Welcome back, <span id="firstName"></span></h1>
+    <p class="page-subtitle">Browse open gigs and track your applications.</p>
+  </div>
+
+  <div class="sec-head">
+    <div class="sec-title">My Applications</div>
+  </div>
+  <div id="myApps">
+    <div class="loading-state"><div class="spinner"></div><p>Loading your applications…</p></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="sec-head" style="margin-top:40px">
+    <div class="sec-title">Available Gigs</div>
+  </div>
+  <div id="gigGrid" class="grid-3">
+    <div class="loading-state" style="grid-column:1/-1"><div class="spinner"></div><p>Loading gigs…</p></div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+  let currentUser = null;
+
+  // ── Auth guard ────────────────────────────────────────────
+  sb.auth.getSession().then(async ({ data: { session } }) => {
+    if (!session) { window.location.href = 'auth.html'; return; }
+    if (session.user.email === ADMIN_EMAIL) { window.location.href = 'admin.html'; return; }
+    currentUser = session.user;
+
+    const { data: profile } = await sb.from('users').select('first_name').eq('id', currentUser.id).single();
+    document.getElementById('firstName').textContent = profile?.first_name || 'Ambassador';
+
+    loadDashboard();
+  });
+
+  document.getElementById('signOutBtn').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    window.location.href = 'auth.html';
+  });
+
+  // ── Load dashboard ────────────────────────────────────────
+  async function loadDashboard() {
+    const [{ data: apps }, { data: gigs }] = await Promise.all([
+      sb.from('applications').select('*').eq('user_id', currentUser.id).order('applied_at', { ascending: false }),
+      sb.from('gigs').select('*').eq('status', 'open').order('created_at', { ascending: false })
+    ]);
+
+    // Map gigId → application for quick lookup
+    const appliedMap = {};
+    (apps || []).forEach(a => { appliedMap[a.gig_id] = { status: a.status, id: a.id }; });
+
+    renderMyApplications(apps || []);
+    renderGigs(gigs || [], appliedMap);
+  }
+
+  // ── Render My Applications ────────────────────────────────
+  async function renderMyApplications(apps) {
+    const wrap = document.getElementById('myApps');
+    if (!apps.length) {
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>You haven't applied to any gigs yet.<br>Browse available gigs below and hit Apply!</p></div>`;
+      return;
+    }
+
+    // Fetch gig titles
+    const gigIds = [...new Set(apps.map(a => a.gig_id))];
+    const { data: gigs } = await sb.from('gigs').select('id, title, brand, category').in('id', gigIds);
+    const gigMap = {};
+    (gigs || []).forEach(g => { gigMap[g.id] = g; });
+
+    let html = '<div class="grid-3">';
+    apps.forEach(app => {
+      const gig    = gigMap[app.gig_id] || {};
+      const status = app.status || 'pending';
+      html += `
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+            <div class="card-title" style="font-size:17px">${esc(gig.title || 'Gig')}</div>
+            <span class="badge badge-${status}">${status}</span>
+          </div>
+          <div class="card-meta">${esc(gig.brand || '')}${gig.category ? ' · ' + esc(gig.category) : ''}</div>
+          <div class="card-desc" style="font-size:13px">Applied ${app.applied_at ? formatDate(new Date(app.applied_at)) : ''}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a href="gig.html?id=${esc(app.gig_id)}" class="btn-outline" style="font-size:11px;padding:8px 16px">View Gig</a>
+            ${status === 'accepted'
+              ? `<a href="tasks.html?gigId=${esc(app.gig_id)}" class="btn-primary" style="font-size:11px;padding:8px 16px">View Tasks</a>`
+              : `<span class="applied-btn">${status === 'rejected' ? 'Not Selected' : 'Awaiting Review'}</span>`}
+          </div>
+        </div>`;
+    });
+    html += '</div>';
+    wrap.innerHTML = html;
+  }
+
+  // ── Render Available Gigs ─────────────────────────────────
+  function renderGigs(gigs, appliedMap) {
+    const wrap = document.getElementById('gigGrid');
+    if (!gigs.length) {
+      wrap.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🎯</div><p>No gigs are open right now.<br>Check back soon!</p></div>`;
+      return;
+    }
+
+    let html = '';
+    gigs.forEach(gig => {
+      const applied  = appliedMap[gig.id];
+      const deadline = gig.deadline ? formatDate(new Date(gig.deadline)) : 'N/A';
+
+      html += `
+        <div class="card" style="display:flex;flex-direction:column">
+          <div class="card-pills">
+            <span class="badge badge-open">Open</span>
+            ${gig.category ? `<span class="badge" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.45)">${esc(gig.category)}</span>` : ''}
+          </div>
+          <div class="card-title">${esc(gig.title)}</div>
+          <div class="card-meta">${esc(gig.brand)}</div>
+          <div class="card-desc">${esc(truncate(gig.description, 110))}</div>
+          <div style="display:flex;gap:16px;margin-bottom:18px;flex-wrap:wrap">
+            ${gig.compensation ? `<div><div style="color:rgba(255,255,255,0.38);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">Pay</div><span class="compensation-badge">${esc(gig.compensation)}</span></div>` : ''}
+            <div><div style="color:rgba(255,255,255,0.38);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">Deadline</div><div style="font-size:13px;font-weight:500">${esc(deadline)}</div></div>
+            ${gig.campuses ? `<div><div style="color:rgba(255,255,255,0.38);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">Campuses</div><div style="font-size:13px;font-weight:500">${esc(gig.campuses)}</div></div>` : ''}
+          </div>
+          <div class="card-footer" style="margin-top:auto">
+            <a href="gig.html?id=${esc(gig.id)}" class="btn-outline" style="font-size:11px;padding:9px 18px">Details</a>
+            ${applied
+              ? `<span class="badge badge-${applied.status}" style="font-size:11px;padding:6px 14px">${applied.status === 'accepted' ? 'Accepted ✓' : applied.status === 'rejected' ? 'Not Selected' : 'Applied'}</span>`
+              : `<button class="btn-primary" style="font-size:11px;padding:9px 18px" data-gig-id="${esc(gig.id)}" onclick="applyToGigClick(this)">Apply Now</button>`}
+          </div>
+        </div>`;
+    });
+    wrap.innerHTML = html;
+  }
+
+  // ── Apply to Gig ──────────────────────────────────────────
+  function applyToGigClick(btn) { applyToGig(btn.dataset.gigId, btn); }
+
+  async function applyToGig(gigId, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Applying…';
+
+    const { data: profile } = await sb.from('users').select('first_name, last_name').eq('id', currentUser.id).single();
+
+    const { error } = await sb.from('applications').insert({
+      gig_id:     gigId,
+      user_id:    currentUser.id,
+      user_email: currentUser.email,
+      user_name:  profile ? `${profile.first_name} ${profile.last_name}`.trim() : ''
+    });
+
+    if (error) {
+      btn.disabled    = false;
+      btn.textContent = 'Apply Now';
+      alert('Could not submit application. Please try again.');
+      return;
+    }
+
+    btn.outerHTML = `<span class="badge badge-pending" style="font-size:11px;padding:6px 14px">Applied</span>`;
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+  function formatDate(date) {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  function truncate(str, len) {
+    if (!str) return '';
+    return str.length > len ? str.slice(0, len).trimEnd() + '…' : str;
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://eemsfapreydhdhogfocg.supabase.co; connect-src 'self' https://eemsfapreydhdhogfocg.supabase.co wss://realtime.supabase.co wss://eemsfapreydhdhogfocg.supabase.co; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <title>Admin | Campus Cliques</title>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="images/favicon.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="platform.css">
+  <style>
+    .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; flex-wrap: wrap; gap: 16px; }
+
+    #createGigWrap { display: none; }
+
+    .gig-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; background: rgba(255,255,255,0.03); border: 1px solid rgba(123,104,238,0.12); border-radius: 14px; margin-bottom: 10px; flex-wrap: wrap; }
+    .gig-row-info  { flex: 1; min-width: 200px; }
+    .gig-row-title { font-size: 15px; font-weight: 600; margin-bottom: 3px; }
+    .gig-row-meta  { font-size: 12px; color: rgba(255,255,255,0.4); }
+    .gig-row-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
+
+    .btn-toggle-open  { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.25); color: #4ade80; padding: 7px 14px; border-radius: 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; font-family: Inter, sans-serif; transition: background 0.2s; }
+    .btn-toggle-close { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.4); padding: 7px 14px; border-radius: 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; font-family: Inter, sans-serif; transition: background 0.2s; }
+    .btn-delete       { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: #f87171; padding: 7px 14px; border-radius: 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; font-family: Inter, sans-serif; }
+    .btn-delete:hover { background: rgba(239,68,68,0.18); }
+
+    .stats-bar { display: flex; gap: 20px; margin-bottom: 32px; flex-wrap: wrap; }
+    .stat-pill { background: rgba(255,255,255,0.04); border: 1px solid rgba(123,104,238,0.15); border-radius: 14px; padding: 14px 22px; text-align: center; min-width: 120px; }
+    .stat-pill-val   { font-family: Anton, sans-serif; font-size: 30px; background: linear-gradient(135deg, #b8b0ff, #e040fb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1; }
+    .stat-pill-label { color: rgba(255,255,255,0.4); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nl">
+    <img src="images/logo-dark.png" alt="Campus Cliques Logo" style="width:44px;height:44px;object-fit:contain;border-radius:8px">
+    <span class="nlt">CAMPUS CLIQUES</span>
+  </div>
+  <div class="nr">
+    <span style="color:rgba(255,255,255,0.35);font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase">Admin</span>
+    <a href="index.html">Site</a>
+    <button class="nc" id="signOutBtn" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12)">Sign Out</button>
+  </div>
+</nav>
+
+<div class="page-wrap">
+
+  <div class="admin-header">
+    <div>
+      <div class="page-label">Admin Panel</div>
+      <h1 class="page-title">Campus Cliques <span>HQ</span></h1>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-pill"><div class="stat-pill-val" id="statGigs">0</div><div class="stat-pill-label">Total Gigs</div></div>
+    <div class="stat-pill"><div class="stat-pill-val" id="statApps">0</div><div class="stat-pill-label">Applications</div></div>
+    <div class="stat-pill"><div class="stat-pill-val" id="statPending">0</div><div class="stat-pill-label">Pending Review</div></div>
+    <div class="stat-pill"><div class="stat-pill-val" id="statSubs">0</div><div class="stat-pill-label">Submissions</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('gigs', this)">Gigs</button>
+    <button class="tab-btn" onclick="switchTab('applications', this)">Applications</button>
+    <button class="tab-btn" onclick="switchTab('submissions', this)">Submissions</button>
+  </div>
+
+  <!-- ══ GIGS ══════════════════════════════════════════════ -->
+  <div class="tab-panel active" id="tab-gigs">
+    <div class="sec-head">
+      <div class="sec-title">All Gigs</div>
+      <button class="btn-primary" style="font-size:11px;padding:10px 20px" onclick="toggleCreateForm()">+ Create Gig</button>
+    </div>
+
+    <div id="createGigWrap" class="gig-form-wrap">
+      <div class="gig-form-title">Create New Gig</div>
+      <div id="createGigError" class="alert alert-error" style="display:none"></div>
+      <form id="createGigForm" novalidate>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div class="fgrp" style="grid-column:1/-1">
+            <label class="fl">Gig Title</label>
+            <input class="fi" name="title" type="text" placeholder="Post 2 TikToks for Brand X" required>
+          </div>
+          <div class="fgrp">
+            <label class="fl">Brand Name</label>
+            <input class="fi" name="brand" type="text" placeholder="Brand X" required>
+          </div>
+          <div class="fgrp">
+            <label class="fl">Category</label>
+            <select class="fsel" name="category">
+              <option value="">Category…</option>
+              <option>Social Content</option><option>On-Campus Event</option>
+              <option>Product Review</option><option>Brand Ambassador</option>
+              <option>Photography</option><option>Other</option>
+            </select>
+          </div>
+          <div class="fgrp">
+            <label class="fl">Compensation</label>
+            <input class="fi" name="compensation" type="text" placeholder="$150 cash / Free product">
+          </div>
+          <div class="fgrp">
+            <label class="fl">Deadline</label>
+            <input class="fi" name="deadline" type="date">
+          </div>
+          <div class="fgrp" style="grid-column:1/-1">
+            <label class="fl">Target Campuses</label>
+            <input class="fi" name="campuses" type="text" placeholder="Nationwide / Southeast US…">
+          </div>
+          <div class="fgrp" style="grid-column:1/-1">
+            <label class="fl">Description</label>
+            <textarea class="fta" name="description" placeholder="Describe the gig, requirements, content guidelines…" style="min-height:100px"></textarea>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <label class="fl" style="margin:0">Tasks / Deliverables</label>
+            <button type="button" class="btn-outline" style="font-size:10px;padding:7px 14px" onclick="addTaskEntry()">+ Add Task</button>
+          </div>
+          <div id="taskEntries"></div>
+          <div id="noTasksNote" style="color:rgba(255,255,255,0.3);font-size:13px;padding:8px 0">No tasks added yet. Click "Add Task" above.</div>
+        </div>
+
+        <button type="submit" class="btn-primary" style="font-size:12px;padding:12px 28px;position:relative">
+          <span class="btn-text">Publish Gig</span>
+          <span class="btn-spinner" style="display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></span>
+        </button>
+        <button type="button" class="btn-ghost" style="margin-left:16px" onclick="toggleCreateForm()">Cancel</button>
+      </form>
+    </div>
+
+    <div id="gigsList">
+      <div class="loading-state"><div class="spinner"></div><p>Loading gigs…</p></div>
+    </div>
+  </div>
+
+  <!-- ══ APPLICATIONS ══════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-applications">
+    <div class="sec-head" style="margin-bottom:24px"><div class="sec-title">Applications</div></div>
+    <div class="filter-bar">
+      <label>Filter by Gig</label>
+      <select class="fsel" id="appGigFilter" style="width:auto;min-width:220px" onchange="filterApplications()">
+        <option value="">All Gigs</option>
+      </select>
+    </div>
+    <div id="appsList">
+      <div class="loading-state"><div class="spinner"></div><p>Loading applications…</p></div>
+    </div>
+  </div>
+
+  <!-- ══ SUBMISSIONS ════════════════════════════════════════ -->
+  <div class="tab-panel" id="tab-submissions">
+    <div class="sec-head" style="margin-bottom:24px"><div class="sec-title">Deliverable Submissions</div></div>
+    <div class="filter-bar">
+      <label>Filter by Gig</label>
+      <select class="fsel" id="subGigFilter" style="width:auto;min-width:220px" onchange="filterSubmissions()">
+        <option value="">All Gigs</option>
+      </select>
+    </div>
+    <div id="subsList">
+      <div class="loading-state"><div class="spinner"></div><p>Loading submissions…</p></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+  let allGigs = [], allApplications = [], allSubmissions = [];
+  let taskEntryCount = 0;
+
+  // ── Auth guard ────────────────────────────────────────────
+  sb.auth.getSession().then(({ data: { session } }) => {
+    if (!session) { window.location.href = 'auth.html'; return; }
+    if (session.user.email !== ADMIN_EMAIL) { window.location.href = 'dashboard.html'; return; }
+    loadAll();
+  });
+
+  document.getElementById('signOutBtn').addEventListener('click', async () => {
+    await sb.auth.signOut(); window.location.href = 'auth.html';
+  });
+
+  // ── Tab switching ─────────────────────────────────────────
+  function switchTab(name, el) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(`tab-${name}`).classList.add('active');
+  }
+
+  // ── Load all data ─────────────────────────────────────────
+  async function loadAll() {
+    const [{ data: gigs }, { data: apps }, { data: subs }] = await Promise.all([
+      sb.from('gigs').select('*').order('created_at', { ascending: false }),
+      sb.from('applications').select('*').order('applied_at', { ascending: false }),
+      sb.from('deliverables').select('*').order('submitted_at', { ascending: false })
+    ]);
+
+    allGigs         = gigs  || [];
+    allApplications = apps  || [];
+    allSubmissions  = subs  || [];
+
+    document.getElementById('statGigs').textContent    = allGigs.length;
+    document.getElementById('statApps').textContent    = allApplications.length;
+    document.getElementById('statPending').textContent = allApplications.filter(a => a.status === 'pending').length;
+    document.getElementById('statSubs').textContent    = allSubmissions.length;
+
+    const gigOpts = allGigs.map(g => `<option value="${esc(g.id)}">${esc(g.title)}</option>`).join('');
+    document.getElementById('appGigFilter').innerHTML += gigOpts;
+    document.getElementById('subGigFilter').innerHTML += gigOpts;
+
+    renderGigs();
+    renderApplications();
+    renderSubmissions();
+  }
+
+  // ══ GIGS ══════════════════════════════════════════════════
+
+  function renderGigs() {
+    const wrap = document.getElementById('gigsList');
+    if (!allGigs.length) {
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">🎯</div><p>No gigs yet. Create your first gig above.</p></div>`;
+      return;
+    }
+    wrap.innerHTML = allGigs.map(gig => {
+      const appCount  = allApplications.filter(a => a.gig_id === gig.id).length;
+      const isOpen    = gig.status === 'open';
+      const taskCount = (gig.tasks || []).length;
+      return `
+        <div class="gig-row">
+          <div class="gig-row-info">
+            <div class="gig-row-title">${esc(gig.title)}</div>
+            <div class="gig-row-meta">${esc(gig.brand)}${gig.category ? ' · ' + esc(gig.category) : ''} · ${appCount} application${appCount !== 1 ? 's' : ''} · ${taskCount} task${taskCount !== 1 ? 's' : ''}</div>
+          </div>
+          <div class="gig-row-actions">
+            <span class="badge badge-${isOpen ? 'open' : 'closed'}">${isOpen ? 'Open' : 'Closed'}</span>
+            <button class="${isOpen ? 'btn-toggle-close' : 'btn-toggle-open'}" data-gig-id="${esc(gig.id)}" data-new-status="${isOpen ? 'closed' : 'open'}" onclick="toggleGigStatusClick(this)">${isOpen ? 'Close' : 'Reopen'}</button>
+            <button class="btn-delete" data-gig-id="${esc(gig.id)}" onclick="deleteGigClick(this)">Delete</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function toggleGigStatusClick(btn) { toggleGigStatus(btn.dataset.gigId, btn.dataset.newStatus, btn); }
+  function deleteGigClick(btn)       { deleteGig(btn.dataset.gigId, btn); }
+
+  async function toggleGigStatus(gigId, newStatus, btn) {
+    btn.disabled = true;
+    const { error } = await sb.from('gigs').update({ status: newStatus }).eq('id', gigId);
+    if (error) { btn.disabled = false; alert('Could not update gig status.'); return; }
+    const gig = allGigs.find(g => g.id === gigId);
+    if (gig) gig.status = newStatus;
+    renderGigs();
+  }
+
+  async function deleteGig(gigId, btn) {
+    if (!confirm('Delete this gig? This cannot be undone.')) return;
+    btn.disabled = true;
+    const { error } = await sb.from('gigs').delete().eq('id', gigId);
+    if (error) { btn.disabled = false; alert('Could not delete gig.'); return; }
+    allGigs = allGigs.filter(g => g.id !== gigId);
+    renderGigs();
+    document.getElementById('statGigs').textContent = allGigs.length;
+  }
+
+  function toggleCreateForm() {
+    const wrap = document.getElementById('createGigWrap');
+    wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function addTaskEntry() {
+    taskEntryCount++;
+    document.getElementById('noTasksNote').style.display = 'none';
+    const id  = `te-${taskEntryCount}`;
+    const div = document.createElement('div');
+    div.className = 'task-entry';
+    div.id = id;
+    div.innerHTML = `
+      <div class="task-entry-head">
+        <div class="fgrp">
+          <label class="fl">Task Title</label>
+          <input class="fi" name="task-title" type="text" placeholder="Post TikTok #1" required>
+        </div>
+        <div class="fgrp">
+          <label class="fl">Submission Type</label>
+          <select class="fsel" name="task-type">
+            <option value="link">🔗 Link (URL)</option>
+            <option value="file">📎 File Upload</option>
+            <option value="text">✏️ Text Response</option>
+          </select>
+        </div>
+        <button type="button" class="task-entry-remove" onclick="document.getElementById('${id}').remove();checkNoTasks()">Remove</button>
+      </div>
+      <div class="fgrp">
+        <label class="fl">Task Description (optional)</label>
+        <input class="fi" name="task-desc" type="text" placeholder="E.g. Post a 30–60s TikTok tagging @brand">
+      </div>`;
+    document.getElementById('taskEntries').appendChild(div);
+  }
+
+  function checkNoTasks() {
+    document.getElementById('noTasksNote').style.display = document.querySelectorAll('.task-entry').length ? 'none' : 'block';
+  }
+
+  document.getElementById('createGigForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('createGigError');
+    errEl.style.display = 'none';
+    const btn = this.querySelector('button[type="submit"]');
+    const get = name => this.querySelector(`[name="${name}"]`).value.trim();
+
+    if (!get('title') || !get('brand')) {
+      errEl.textContent = 'Title and brand are required.';
+      errEl.style.display = 'block'; return;
+    }
+
+    const taskEls  = this.querySelectorAll('.task-entry');
+    const tasks    = [];
+    let taskError  = false;
+    taskEls.forEach((el, i) => {
+      const title = el.querySelector('[name="task-title"]').value.trim();
+      if (!title) { taskError = true; return; }
+      tasks.push({
+        id:          `task-${Date.now()}-${i}`,
+        title,
+        description: el.querySelector('[name="task-desc"]').value.trim(),
+        type:        el.querySelector('[name="task-type"]').value
+      });
+    });
+
+    if (taskError) {
+      errEl.textContent = 'Please fill in a title for all tasks, or remove empty ones.';
+      errEl.style.display = 'block'; return;
+    }
+
+    btn.disabled = true;
+    btn.querySelector('.btn-text').style.opacity    = '0';
+    btn.querySelector('.btn-spinner').style.display = 'block';
+
+    const { data: newGig, error } = await sb.from('gigs').insert({
+      title:        get('title'),
+      brand:        get('brand'),
+      category:     get('category'),
+      compensation: get('compensation'),
+      deadline:     get('deadline') || null,
+      campuses:     get('campuses'),
+      description:  get('description'),
+      tasks,
+      status: 'open'
+    }).select().single();
+
+    if (error) {
+      errEl.textContent = 'Failed to create gig. Please try again.';
+      errEl.style.display = 'block';
+    } else {
+      allGigs.unshift(newGig);
+      document.getElementById('statGigs').textContent = allGigs.length;
+      const opt = `<option value="${esc(newGig.id)}">${esc(newGig.title)}</option>`;
+      document.getElementById('appGigFilter').innerHTML += opt;
+      document.getElementById('subGigFilter').innerHTML += opt;
+      this.reset();
+      document.getElementById('taskEntries').innerHTML = '';
+      checkNoTasks();
+      toggleCreateForm();
+      renderGigs();
+    }
+
+    btn.disabled = false;
+    btn.querySelector('.btn-text').style.opacity    = '1';
+    btn.querySelector('.btn-spinner').style.display = 'none';
+  });
+
+  // ══ APPLICATIONS ══════════════════════════════════════════
+
+  function filterApplications() {
+    renderApplications(document.getElementById('appGigFilter').value);
+  }
+
+  function renderApplications(filterGigId = '') {
+    const wrap = document.getElementById('appsList');
+    const apps = filterGigId ? allApplications.filter(a => a.gig_id === filterGigId) : allApplications;
+
+    if (!apps.length) {
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">📨</div><p>No applications yet.</p></div>`;
+      return;
+    }
+
+    const gigMap = {};
+    allGigs.forEach(g => { gigMap[g.id] = g.title; });
+
+    wrap.innerHTML = apps.map(app => {
+      const status   = app.status || 'pending';
+      const applied  = app.applied_at ? formatDate(new Date(app.applied_at)) : 'N/A';
+      const gigTitle = gigMap[app.gig_id] || 'Unknown Gig';
+      return `
+        <div class="app-row" id="app-row-${esc(app.id)}">
+          <div class="app-row-info">
+            <div class="app-row-name">${esc(app.user_name || app.user_email)}</div>
+            <div class="app-row-meta">${esc(app.user_email)} · Applied ${esc(applied)}</div>
+            <div class="app-row-gig">${esc(gigTitle)}</div>
+          </div>
+          <div class="app-row-actions">
+            <span class="badge badge-${status}">${status}</span>
+            ${status !== 'accepted' ? `<button class="btn-accept" data-app-id="${esc(app.id)}" data-new-status="accepted" onclick="updateAppStatusClick(this)">Accept</button>` : ''}
+            ${status !== 'rejected' ? `<button class="btn-reject" data-app-id="${esc(app.id)}" data-new-status="rejected" onclick="updateAppStatusClick(this)">Reject</button>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function updateAppStatusClick(btn) { updateAppStatus(btn.dataset.appId, btn.dataset.newStatus, btn); }
+
+  async function updateAppStatus(appId, newStatus, btn) {
+    btn.disabled = true;
+    const { error } = await sb.from('applications').update({ status: newStatus }).eq('id', appId);
+    if (error) { btn.disabled = false; alert('Could not update application.'); return; }
+    const app = allApplications.find(a => a.id === appId);
+    if (app) app.status = newStatus;
+    document.getElementById('statPending').textContent = allApplications.filter(a => a.status === 'pending').length;
+    renderApplications(document.getElementById('appGigFilter').value);
+  }
+
+  // ══ SUBMISSIONS ═══════════════════════════════════════════
+
+  function filterSubmissions() {
+    renderSubmissions(document.getElementById('subGigFilter').value);
+  }
+
+  function renderSubmissions(filterGigId = '') {
+    const wrap = document.getElementById('subsList');
+    const subs = filterGigId ? allSubmissions.filter(s => s.gig_id === filterGigId) : allSubmissions;
+
+    if (!subs.length) {
+      wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><p>No submissions yet.</p></div>`;
+      return;
+    }
+
+    const gigMap = {};
+    allGigs.forEach(g => { gigMap[g.id] = g.title; });
+
+    wrap.innerHTML = subs.map(sub => {
+      const status   = sub.status || 'submitted';
+      const gigTitle = gigMap[sub.gig_id] || 'Unknown Gig';
+      const date     = sub.submitted_at ? formatDate(new Date(sub.submitted_at)) : 'N/A';
+
+      const contentHtml = (sub.type === 'file' && sub.file_url)
+        ? `<a href="${safeUrl(sub.file_url)}" target="_blank" rel="noopener noreferrer" style="color:#b8b0ff;text-decoration:underline">${esc(sub.file_name || 'View File')}</a>`
+        : esc(sub.content || '—');
+
+      return `
+        <div class="sub-row" id="sub-row-${esc(sub.id)}">
+          <div class="sub-row-info">
+            <div class="sub-row-name">${esc(sub.user_email)}</div>
+            <div class="sub-row-meta">${esc(gigTitle)} · ${esc(sub.task_title || 'Task')} · ${esc(date)}</div>
+          </div>
+          <div class="sub-row-content">${contentHtml}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap">
+            <span class="badge badge-${status}">${status.replace('_', ' ')}</span>
+            ${status !== 'approved'       ? `<button class="btn-approve" data-sub-id="${esc(sub.id)}" data-new-status="approved"       onclick="updateSubStatusClick(this)">Approve</button>` : ''}
+            ${status !== 'needs_revision' ? `<button class="btn-revise"  data-sub-id="${esc(sub.id)}" data-new-status="needs_revision" onclick="updateSubStatusClick(this)">Needs Revision</button>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function updateSubStatusClick(btn) { updateSubStatus(btn.dataset.subId, btn.dataset.newStatus, btn); }
+
+  async function updateSubStatus(subId, newStatus, btn) {
+    btn.disabled = true;
+    const { error } = await sb.from('deliverables').update({ status: newStatus }).eq('id', subId);
+    if (error) { btn.disabled = false; alert('Could not update submission.'); return; }
+    const sub = allSubmissions.find(s => s.id === subId);
+    if (sub) sub.status = newStatus;
+    renderSubmissions(document.getElementById('subGigFilter').value);
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+  function formatDate(date) {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+</script>
+</body>
+</html>

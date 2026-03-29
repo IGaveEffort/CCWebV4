@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://eemsfapreydhdhogfocg.supabase.co; connect-src 'self' https://eemsfapreydhdhogfocg.supabase.co wss://realtime.supabase.co wss://eemsfapreydhdhogfocg.supabase.co; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <title>Gig | Campus Cliques</title>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Playfair+Display:ital,wght@0,700;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="images/favicon.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="platform.css">
+  <style>
+    .gig-hero {
+      background: rgba(123,104,238,0.06);
+      border: 1px solid rgba(123,104,238,0.15);
+      border-radius: 24px; padding: 40px; margin-bottom: 32px;
+    }
+    .gig-hero-top {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 16px;
+      flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .gig-main-title {
+      font-family: Anton, sans-serif;
+      font-size: clamp(28px, 4vw, 46px);
+      line-height: 1.05; letter-spacing: -0.5px;
+    }
+    .gig-brand { color: #b8b0ff; font-size: 15px; font-weight: 600; margin-top: 6px; }
+    .gig-description { color: rgba(255,255,255,0.68); font-size: 15px; line-height: 1.75; max-width: 700px; }
+
+    .tasks-preview {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(123,104,238,0.15);
+      border-radius: 16px; padding: 24px; margin-bottom: 32px;
+    }
+    .tasks-preview-title { font-family: Anton, sans-serif; font-size: 18px; letter-spacing: 0.3px; margin-bottom: 16px; }
+    .task-preview-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .task-preview-item:last-child { border-bottom: none; }
+    .task-num {
+      background: linear-gradient(135deg, rgba(123,104,238,0.3), rgba(192,38,211,0.3));
+      color: #b8b0ff; font-family: Anton, sans-serif; font-size: 12px;
+      width: 26px; height: 26px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .task-preview-name  { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .task-preview-desc  { font-size: 13px; color: rgba(255,255,255,0.5); }
+
+    .apply-section {
+      background: linear-gradient(135deg, rgba(123,104,238,0.1), rgba(192,38,211,0.08));
+      border: 1px solid rgba(123,104,238,0.25);
+      border-radius: 20px; padding: 32px; text-align: center;
+    }
+    .apply-section h3 { font-family: Anton, sans-serif; font-size: 24px; margin-bottom: 8px; }
+    .apply-section p  { color: rgba(255,255,255,0.55); font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nl">
+    <img src="images/logo-dark.png" alt="Campus Cliques Logo" style="width:44px;height:44px;object-fit:contain;border-radius:8px">
+    <span class="nlt">CAMPUS CLIQUES</span>
+  </div>
+  <div class="nr">
+    <a href="dashboard.html">Dashboard</a>
+    <button class="nc" id="signOutBtn" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12)">Sign Out</button>
+  </div>
+</nav>
+
+<div class="page-wrap" style="max-width:900px">
+
+  <button class="back-link" onclick="history.back()">← Back to Dashboard</button>
+
+  <div id="loadingState" class="loading-state"><div class="spinner"></div><p>Loading gig…</p></div>
+
+  <div id="gigContent" style="display:none">
+
+    <div class="gig-hero">
+      <div class="gig-hero-top">
+        <div>
+          <div id="gigTitle" class="gig-main-title"></div>
+          <div id="gigBrand" class="gig-brand"></div>
+        </div>
+        <span id="gigStatus" class="badge"></span>
+      </div>
+      <div class="info-grid" style="margin:24px 0">
+        <div class="info-item"><div class="info-label">Compensation</div><div class="info-val" id="gigComp" style="color:#4ade80;font-weight:700"></div></div>
+        <div class="info-item"><div class="info-label">Deadline</div><div class="info-val" id="gigDeadline"></div></div>
+        <div class="info-item"><div class="info-label">Category</div><div class="info-val" id="gigCategory"></div></div>
+        <div class="info-item"><div class="info-label">Campuses</div><div class="info-val" id="gigCampuses"></div></div>
+      </div>
+      <div id="gigDesc" class="gig-description"></div>
+    </div>
+
+    <div class="tasks-preview" id="tasksPreviewWrap" style="display:none">
+      <div class="tasks-preview-title">What You'll Submit</div>
+      <div id="tasksPreviewList"></div>
+    </div>
+
+    <div class="apply-section" id="applySection">
+      <h3>Ready to Apply?</h3>
+      <p>Submit your application and we'll review it. Once accepted, your tasks will unlock.</p>
+      <button id="applyBtn" class="btn-primary" style="font-size:13px;padding:14px 36px" onclick="applyToGig()">Apply Now</button>
+    </div>
+
+    <div id="appliedSection" style="display:none" class="apply-section">
+      <div id="appliedContent"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+  let currentUser = null;
+  let gigId       = null;
+  let gigData     = null;
+
+  sb.auth.getSession().then(async ({ data: { session } }) => {
+    if (!session) { window.location.href = 'auth.html'; return; }
+    if (session.user.email === ADMIN_EMAIL) { window.location.href = 'admin.html'; return; }
+    currentUser = session.user;
+
+    gigId = new URLSearchParams(window.location.search).get('id');
+    if (!gigId) { window.location.href = 'dashboard.html'; return; }
+
+    loadGig();
+  });
+
+  document.getElementById('signOutBtn').addEventListener('click', async () => {
+    await sb.auth.signOut(); window.location.href = 'auth.html';
+  });
+
+  async function loadGig() {
+    const [{ data: gig }, { data: apps }] = await Promise.all([
+      sb.from('gigs').select('*').eq('id', gigId).single(),
+      sb.from('applications').select('status').eq('gig_id', gigId).eq('user_id', currentUser.id).limit(1)
+    ]);
+
+    if (!gig) {
+      document.getElementById('loadingState').innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>Gig not found. <a href="dashboard.html" style="color:#b8b0ff">Back to Dashboard</a></p></div>`;
+      return;
+    }
+
+    gigData = gig;
+    const isOpen = gig.status === 'open';
+
+    document.getElementById('gigTitle').textContent    = gig.title || '';
+    document.getElementById('gigBrand').textContent    = gig.brand || '';
+    document.getElementById('gigDesc').textContent     = gig.description || '';
+    document.getElementById('gigComp').textContent     = gig.compensation || 'N/A';
+    document.getElementById('gigDeadline').textContent = gig.deadline ? formatDate(new Date(gig.deadline)) : '—';
+    document.getElementById('gigCategory').textContent = gig.category || 'N/A';
+    document.getElementById('gigCampuses').textContent = gig.campuses || 'N/A';
+
+    const statusEl = document.getElementById('gigStatus');
+    statusEl.className   = `badge badge-${isOpen ? 'open' : 'closed'}`;
+    statusEl.textContent = isOpen ? 'Open' : 'Closed';
+
+    // Tasks preview
+    const tasks = gig.tasks || [];
+    if (tasks.length) {
+      document.getElementById('tasksPreviewWrap').style.display = 'block';
+      const typeLabels = { link: '🔗 Link', file: '📎 File Upload', text: '✏️ Text' };
+      document.getElementById('tasksPreviewList').innerHTML = tasks.map((t, i) => `
+        <div class="task-preview-item">
+          <div class="task-num">${i + 1}</div>
+          <div>
+            <div class="task-preview-name">${esc(t.title)}</div>
+            <div class="task-preview-desc">${esc(t.description || '')} <span class="badge badge-${esc(t.type)}" style="margin-left:6px">${esc(typeLabels[t.type] || t.type)}</span></div>
+          </div>
+        </div>`).join('');
+    }
+
+    // Application state
+    if (apps && apps.length) {
+      showAppliedState(apps[0].status);
+    } else if (!isOpen) {
+      document.getElementById('applyBtn').disabled     = true;
+      document.getElementById('applyBtn').textContent  = 'Gig Closed';
+    }
+
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('gigContent').style.display   = 'block';
+  }
+
+  async function applyToGig() {
+    const btn = document.getElementById('applyBtn');
+    btn.disabled = true; btn.textContent = 'Submitting…';
+
+    const { data: profile } = await sb.from('users').select('first_name, last_name').eq('id', currentUser.id).single();
+
+    const { error } = await sb.from('applications').insert({
+      gig_id:     gigId,
+      user_id:    currentUser.id,
+      user_email: currentUser.email,
+      user_name:  profile ? `${profile.first_name} ${profile.last_name}`.trim() : ''
+    });
+
+    if (error) {
+      btn.disabled = false; btn.textContent = 'Apply Now';
+      alert('Could not submit application. Please try again.');
+      return;
+    }
+
+    showAppliedState('pending');
+  }
+
+  function showAppliedState(status) {
+    document.getElementById('applySection').style.display   = 'none';
+    document.getElementById('appliedSection').style.display = 'block';
+
+    const messages = {
+      pending:  { icon: '⏳', title: 'Application Submitted',  body: 'Your application is under review. We'll notify you once a decision is made.', btn: null },
+      accepted: { icon: '🎉', title: 'You\'re Accepted!',       body: 'Congratulations! Head to your tasks page to see what to submit.',             btn: `<a href="tasks.html?gigId=${gigId}" class="btn-primary" style="font-size:13px;padding:14px 36px">View My Tasks</a>` },
+      rejected: { icon: '😔', title: 'Not Selected',            body: 'Unfortunately you weren't selected for this gig. More opportunities coming!',  btn: `<a href="dashboard.html" class="btn-outline" style="font-size:13px;padding:14px 36px">Browse Gigs</a>` }
+    };
+
+    const m = messages[status] || messages.pending;
+    document.getElementById('appliedContent').innerHTML = `
+      <div style="font-size:40px;margin-bottom:14px">${m.icon}</div>
+      <h3 style="font-family:Anton,sans-serif;font-size:22px;margin-bottom:8px">${m.title}</h3>
+      <p style="color:rgba(255,255,255,0.55);font-size:14px;margin-bottom:${m.btn ? '24px' : '0'};line-height:1.6">${m.body}</p>
+      ${m.btn || ''}`;
+  }
+
+  function formatDate(date) {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+</script>
+</body>
+</html>
