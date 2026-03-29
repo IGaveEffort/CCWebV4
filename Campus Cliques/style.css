@@ -303,11 +303,29 @@ button.loading .btn-spinner { display: inline-block !important; }
 }
 
 /* ── Mobile scroll-driven card flip ── */
+
+/* Ensure webkit prefixes on the inner element for iOS Safari */
+.hc2-inner {
+  -webkit-transform-style: preserve-3d;
+  -webkit-transition: -webkit-transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 @media (max-width: 900px) {
+  /* Switch to Y-axis (horizontal) flip on mobile so back face is right-side up */
+  .hc2-back {
+    -webkit-transform: rotateY(180deg) !important;
+    transform: rotateY(180deg) !important;
+  }
   /* Disable hover flip — scroll takes over */
-  .hc2:hover .hc2-inner { transform: none; }
+  .hc2:hover .hc2-inner {
+    -webkit-transform: none !important;
+    transform: none !important;
+  }
   /* Flip when JS adds .flipped */
-  .hc2.flipped .hc2-inner { transform: rotateX(180deg); }
+  .hc2.flipped .hc2-inner {
+    -webkit-transform: rotateY(180deg) !important;
+    transform: rotateY(180deg) !important;
+  }
 }
 
 /* ── Nav responsive — prevent wrapping ── */
