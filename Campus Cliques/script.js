@@ -112,14 +112,7 @@ async function submitToSheets(payload) {
   const cards = Array.from(document.querySelectorAll('.hg .hc2'));
   if (!cards.length) return;
 
-  const isMobile = () => window.innerWidth <= 900;
-
   function updateFlip() {
-    if (!isMobile()) {
-      cards.forEach(c => c.classList.remove('flipped'));
-      return;
-    }
-
     const mid = window.innerHeight / 2;
     let closest = null;
     let closestDist = Infinity;
@@ -136,14 +129,17 @@ async function submitToSheets(payload) {
   }
 
   let ticking = false;
-  window.addEventListener('scroll', () => {
+  function onMove() {
     if (!ticking) {
       requestAnimationFrame(() => { updateFlip(); ticking = false; });
       ticking = true;
     }
-  }, { passive: true });
+  }
 
-  window.addEventListener('resize', updateFlip, { passive: true });
+  // touchmove fires more reliably than scroll on iOS
+  window.addEventListener('scroll',    onMove, { passive: true });
+  window.addEventListener('touchmove', onMove, { passive: true });
+  window.addEventListener('resize',    updateFlip, { passive: true });
   updateFlip();
 })();
 
