@@ -107,6 +107,32 @@ async function submitToSheets(payload) {
   });
 }
 
+// ── Mobile scroll-flip for How It Works cards ────────────────
+(function initMobileCardFlip() {
+  const cards = document.querySelectorAll('.hg .hc2');
+  if (!cards.length) return;
+
+  const isMobile = () => window.innerWidth <= 900;
+
+  const observer = new IntersectionObserver((entries) => {
+    if (!isMobile()) return;
+    entries.forEach(entry => {
+      entry.target.classList.toggle('flipped', entry.isIntersecting);
+    });
+  }, {
+    // fires when card enters the middle 40% of the viewport
+    rootMargin: '-30% 0px -30% 0px',
+    threshold: 0
+  });
+
+  cards.forEach(card => observer.observe(card));
+
+  // Clean up flipped state if user rotates to desktop width
+  window.addEventListener('resize', () => {
+    if (!isMobile()) cards.forEach(c => c.classList.remove('flipped'));
+  }, { passive: true });
+})();
+
 // ── Ambassador form ──────────────────────────────────────────
 document.getElementById('aForm').addEventListener('submit', async function(e) {
   e.preventDefault();

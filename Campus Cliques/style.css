@@ -302,6 +302,14 @@ button.loading .btn-spinner { display: inline-block !important; }
   .hc2-front .htit { font-size: 13px; }
 }
 
+/* ── Mobile scroll-driven card flip ── */
+@media (max-width: 900px) {
+  /* Disable hover flip — scroll takes over */
+  .hc2:hover .hc2-inner { transform: none; }
+  /* Flip when JS adds .flipped */
+  .hc2.flipped .hc2-inner { transform: rotateX(180deg); }
+}
+
 /* ── Nav responsive — prevent wrapping ── */
 @media (max-width: 720px) {
   /* Hide How It Works / Ambassadors / For Brands, keep Sign In + Join Now */
