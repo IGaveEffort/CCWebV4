@@ -112,7 +112,14 @@ async function submitToSheets(payload) {
   const cards = Array.from(document.querySelectorAll('.hg .hc2'));
   if (!cards.length) return;
 
+  const isMobile = () => window.innerWidth <= 900;
+
   function updateFlip() {
+    if (!isMobile()) {
+      cards.forEach(c => c.classList.remove('flipped'));
+      return;
+    }
+
     const mid = window.innerHeight / 2;
     let closest = null;
     let closestDist = Infinity;

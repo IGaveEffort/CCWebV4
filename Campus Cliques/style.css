@@ -303,28 +303,31 @@ button.loading .btn-spinner { display: inline-block !important; }
 }
 
 /* ── Mobile scroll-driven card flip ── */
-
-/* Ensure webkit prefixes on the inner element for iOS Safari */
-.hc2-inner {
-  -webkit-transform-style: preserve-3d;
-  -webkit-transition: -webkit-transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
+/* Avoid 3D transforms on mobile — backface-visibility breaks on iOS Safari
+   when a parent has a transform applied. Use opacity crossfade instead. */
 @media (max-width: 900px) {
-  /* Switch to Y-axis (horizontal) flip on mobile so back face is right-side up */
-  .hc2-back {
-    -webkit-transform: rotateY(180deg) !important;
-    transform: rotateY(180deg) !important;
-  }
-  /* Disable hover flip — scroll takes over */
-  .hc2:hover .hc2-inner {
-    -webkit-transform: none !important;
+  /* Disable the 3D inner rotation entirely on mobile */
+  .hc2:hover .hc2-inner,
+  .hc2.flipped .hc2-inner {
     transform: none !important;
   }
-  /* Flip when JS adds .flipped */
-  .hc2.flipped .hc2-inner {
-    -webkit-transform: rotateY(180deg) !important;
-    transform: rotateY(180deg) !important;
+  /* Reset back face 3D pre-rotation and hide it by default */
+  .hc2-back {
+    transform: none !important;
+    opacity: 0;
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+  .hc2-front {
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+  /* On scroll flip: fade front out, scale + fade back in */
+  .hc2.flipped .hc2-front {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  .hc2.flipped .hc2-back {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
