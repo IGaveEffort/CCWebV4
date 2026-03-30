@@ -61,6 +61,8 @@
 
     .auth-divider { text-align: center; margin: 28px 0 0; color: rgba(255,255,255,0.35); font-size: 13px; }
     .auth-divider a { color: #b8b0ff; cursor: pointer; text-decoration: underline; }
+    .forgot-link { font-size: 12px; color: rgba(184,176,255,0.7); cursor: pointer; text-decoration: none; font-weight: 400; letter-spacing: 0; text-transform: none; font-family: Inter, sans-serif; }
+    .forgot-link:hover { color: #b8b0ff; }
   </style>
 </head>
 <body>
@@ -100,7 +102,10 @@
             <input class="fi" name="email" type="email" placeholder="alex@university.edu" required>
           </div>
           <div class="fgrp full">
-            <label class="fl">Password</label>
+            <label class="fl" style="display:flex;justify-content:space-between;align-items:center">
+              Password
+              <a class="forgot-link" onclick="showForgot()">Forgot password?</a>
+            </label>
             <input class="fi" name="password" type="password" placeholder="••••••••" required>
           </div>
           <div class="full">
@@ -112,6 +117,29 @@
         </div>
       </form>
       <div class="auth-divider">Don't have an account? <a onclick="switchTab('signup')">Sign up</a></div>
+    </div>
+
+    <!-- Forgot Password -->
+    <div class="auth-panel" id="panel-forgot">
+      <div class="auth-form-title">Reset password.</div>
+      <div class="auth-form-sub">Enter your email and we'll send you a reset link.</div>
+      <div id="forgot-error" class="alert alert-error" style="display:none"></div>
+      <div id="forgot-success" class="alert alert-success" style="display:none"></div>
+      <form id="forgotForm" novalidate>
+        <div class="form-grid">
+          <div class="fgrp full">
+            <label class="fl">Email Address</label>
+            <input class="fi" name="email" type="email" placeholder="alex@university.edu" required>
+          </div>
+          <div class="full">
+            <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:14px;position:relative">
+              <span class="btn-text">Send Reset Link</span>
+              <span class="btn-spinner" style="display:none;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)"></span>
+            </button>
+          </div>
+        </div>
+      </form>
+      <div class="auth-divider"><a onclick="showSignin()">← Back to sign in</a></div>
     </div>
 
     <!-- Sign Up -->
@@ -222,12 +250,34 @@
     });
     document.getElementById('panel-signin').classList.toggle('active', tab === 'signin');
     document.getElementById('panel-signup').classList.toggle('active', tab === 'signup');
+    document.getElementById('panel-forgot').classList.remove('active');
+  }
+
+  function showForgot() {
+    document.getElementById('panel-signin').classList.remove('active');
+    document.getElementById('panel-signup').classList.remove('active');
+    document.getElementById('panel-forgot').classList.add('active');
+    document.getElementById('forgot-error').style.display = 'none';
+    document.getElementById('forgot-success').style.display = 'none';
+  }
+
+  function showSignin() {
+    switchTab('signin');
   }
 
   // ── Redirect if already logged in ────────────────────────
   sb.auth.getSession().then(({ data: { session } }) => {
     if (session) redirect(session.user.email);
   });
+
+  // ── Show success banner after password reset ──────────────
+  if (new URLSearchParams(window.location.search).get('reset') === '1') {
+    const el = document.getElementById('signin-error');
+    el.className = 'alert alert-success';
+    el.textContent = '✓ Password updated! Sign in with your new password.';
+    el.style.display = 'block';
+    history.replaceState(null, '', window.location.pathname);
+  }
 
   function redirect(email) {
     window.location.href = email === ADMIN_EMAIL ? 'admin.html' : 'dashboard.html';
@@ -274,6 +324,33 @@
 
     clearFail();
     redirect(data.user.email);
+  });
+
+  // ── Forgot Password ──────────────────────────────────────
+  document.getElementById('forgotForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    document.getElementById('forgot-error').style.display = 'none';
+    document.getElementById('forgot-success').style.display = 'none';
+    const btn   = this.querySelector('button[type="submit"]');
+    const email = this.querySelector('[name="email"]').value.trim();
+
+    if (!email) { showError('forgot-error', 'Please enter your email address.'); return; }
+
+    setLoading(btn, true);
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password.html'
+    });
+    setLoading(btn, false);
+
+    if (error) {
+      showError('forgot-error', 'Could not send reset email. Please try again.');
+      return;
+    }
+
+    this.reset();
+    const el = document.getElementById('forgot-success');
+    el.textContent = 'Reset link sent! Check your email.';
+    el.style.display = 'block';
   });
 
   // ── Sign Up ───────────────────────────────────────────────
